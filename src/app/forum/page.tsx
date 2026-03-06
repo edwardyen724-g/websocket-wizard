@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_ANON_KEY!);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
 
 interface Post {
-  id: number;
+  id: string;
   title: string;
   content: string;
   created_at: string;
@@ -13,35 +13,45 @@ interface Post {
 const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  
-  const fetchPosts = async () => {
-    try {
-      const { data, error } = await supabase.from<Post>('forum_posts').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      setPosts(data || []);
-    } catch (err) {
-      console.error(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const { data, error } = await supabase.from('forum_posts').select('*');
+
+        if (error) {
+          throw error;
+        }
+
+        setPosts(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPosts();
   }, []);
+
+  if (loading) return <div>Loading...</div>;
+
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div>
       <h1>Community Forum</h1>
-      {loading ? (
-        <p>Loading...</p>
+      <h2>Integrate WebSocket and tanStack seamlessly — Boost your development speed today!</h2>
+      {posts.length === 0 ? (
+        <p>No posts available. Be the first to start a discussion!</p>
       ) : (
         <ul>
           {posts.map(post => (
             <li key={post.id}>
-              <h2>{post.title}</h2>
+              <h3>{post.title}</h3>
               <p>{post.content}</p>
-              <small>{new Date(post.created_at).toLocaleString()}</small>
+              <small>Posted on: {new Date(post.created_at).toLocaleString()}</small>
             </li>
           ))}
         </ul>
