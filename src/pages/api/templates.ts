@@ -1,51 +1,35 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 interface AuthedRequest extends NextApiRequest {
-  user?: { id: string };
+  user?: { id: string; email: string };
 }
 
-const rateLimit = new Map<string, number>();
-const RATE_LIMIT = 5; // allow 5 requests per minute
+const handler = async (req: AuthedRequest, res: NextApiResponse) => {
+  if (req.method === 'POST') {
+    try {
+      const { title, content, framework } = req.body;
 
-const createTemplate = async (req: AuthedRequest, res: NextApiResponse) => {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+      if (!title || !content || !framework) {
+        return res.status(400).json({ message: 'Title, content, and framework are required.' });
+      }
 
-  const userId = req.user?.id;
-  if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
+      const { data, error } = await supabase
+        .from('templates')
+        .insert([{ title, content, framework, user_id: req.user?.id }]);
 
-  const key = `${req.method}-${userId}`;
-  const currentTime = Date.now();
-  const requestCount = rateLimit.get(key) || 0;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-  if (requestCount >= RATE_LIMIT) {
-    return res.status(429).json({ message: 'Too Many Requests' });
-  }
-
-  try {
-    const { title, description, framework } = req.body;
-
-    const { data, error } = await supabase
-      .from('templates')
-      .insert([{ user_id: userId, title, description, framework }]);
-
-    if (error) {
-      return res.status(500).json({ message: error.message });
+      return res.status(201).json(data);
+    } catch (err) {
+      return res.status(500).json({ message: err instanceof Error ? err.message : String(err) });
     }
-
-    rateLimit.set(key, requestCount + 1);
-    setTimeout(() => {
-      rateLimit.set(key, requestCount);
-    }, 60000);
-
-    return res.status(201).json(data);
-  } catch (err) {
-    return res.status(500).json({ message: err instanceof Error ? err.message : String(err) });
+  } else {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
 
-export default createTemplate;
+export default handler;
