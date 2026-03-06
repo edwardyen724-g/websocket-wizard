@@ -1,22 +1,26 @@
-const { defineConfig } = require("tailwindcss");
+const { fontFamily } = require('tailwindcss/defaultTheme');
 
-module.exports = defineConfig({
+module.exports = {
   content: [
-    './src/**/*.{js,ts,jsx,tsx}', 
-    './app/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}',
+    './src/app/**/*.{js,ts,jsx,tsx}',
+    './src/components/**/*.{js,ts,jsx,tsx}',
+    './src/pages/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
-      colors: {
-        primary: '#1d4ed8', // Example primary color
-        secondary: '#9333ea', // Example secondary color
-      },
       fontFamily: {
-        body: ['Inter', 'sans-serif'], // Example body font
-        heading: ['Montserrat', 'sans-serif'], // Example heading font
+        sans: ['Inter', ...fontFamily.sans],
+        serif: ['Merriweather', ...fontFamily.serif],
+        mono: ['Fira Code', ...fontFamily.mono],
+      },
+      colors: {
+        primary: '#5B21B6',
+        secondary: '#4F46E5',
+        accent: '#D97706',
+        background: '#F9FAFB',
+        foreground: '#1F2937',
       },
     },
   },
   plugins: [],
-});
+};
