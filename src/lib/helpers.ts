@@ -1,55 +1,27 @@
-import { Database } from '../lib/database.types';
 import { createClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js/src/lib/SupabaseClient';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
-export const fetchUserData = async (userId: string) => {
-    try {
-        const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-        if (error) throw new Error(error.message);
-
-        return data;
-    } catch (err) {
-        throw new Error(err instanceof Error ? err.message : String(err));
+export const initializeStripe = () => {
+    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+        throw new Error('Stripe publishable key is not defined');
     }
+    // Initialize Stripe here using the publishable key if needed
 };
 
-export const createPaymentIntent = async (amount: number, currency: string) => {
-    try {
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY as string);
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount,
-            currency,
-        });
-
-        return paymentIntent;
-    } catch (err) {
-        throw new Error(err instanceof Error ? err.message : String(err));
-    }
+export const logError = (error: unknown) => {
+    console.error(err instanceof Error ? err.message : String(err));
 };
 
-export const handleWebSocketConnection = () => {
-    const connections = new Map<string, WebSocket>();
+export const handleApiError = (error: unknown): string => {
+    return err instanceof Error ? err.message : String(err);
+};
 
-    return {
-        connect: (id: string, socket: WebSocket) => {
-            connections.set(id, socket);
-        },
-        disconnect: (id: string) => {
-            const socket = connections.get(id);
-            if (socket) {
-                socket.close();
-                connections.delete(id);
-            }
-        },
-        getConnection: (id: string) => connections.get(id),
-    };
+// Function to validate WebSocket URL format
+export const isValidWebSocketUrl = (url: string): boolean => {
+    const pattern = /^wss?:\/\/[^\s/$.?#].[^\s]*$/;
+    return pattern.test(url);
 };
